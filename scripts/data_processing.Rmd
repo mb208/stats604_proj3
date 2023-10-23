@@ -1,0 +1,43 @@
+---
+title: "Data Processing"
+author: "Marc Brooks"
+date: "2023-10-23"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+```
+
+
+# Catch data 
+
+Fisheries data taken from IMAS
+```{r read-catch-data}
+catchInd <- read_csv(file = "./data/CatchInd2015_2015.csv")
+catchNInd <- read_csv(file = "./data/CatchNInd2015_2015.csv")
+
+codebk <- readxl::read_xlsx("./data/Codes.xlsx", sheet = "Cell")
+```
+
+
+
+Lat should be between -20 and 10 degrees. Lon should be between 91 and 141 
+degrees.
+
+```{r}
+cells_indonesia <- codebk %>% filter(LonCentre > 92, LonCentre < 141,
+                                     LatCentre > -20, LatCentre < 10)
+```
+
+
+```{r}
+indo_catchInd <- catchInd %>% inner_join(cells_indonesia, by = "Cell")
+indo_catchNInd <- catchNInd %>% inner_join(cells_indonesia, by = "Cell")
+
+write_csv(indo_catchNInd, "./data/Indonesia_NIndCatch15.csv")
+write_csv(indo_catchInd, "./data/Indonesia_IndCatch15.csv")
+```
+
