@@ -9,6 +9,7 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
+library(haven)
 ```
 
 
@@ -40,4 +41,20 @@ indo_catchNInd <- catchNInd %>% inner_join(cells_indonesia, by = "Cell")
 write_csv(indo_catchNInd, "../data/Indonesia_NIndCatch15.csv")
 write_csv(indo_catchInd, "../data/Indonesia_IndCatch15.csv")
 ```
+
+
+
+Reading in paper's dta file.
+
+```{r}
+stata_file <- read_dta(file = "../data/ylu&sy_indonesia_sample.dta")
+```
+
+
+```{r}
+head(stata_file)
+
+write_csv(stata_file, "../data/final_dta_data.csv")
+```
+
 
