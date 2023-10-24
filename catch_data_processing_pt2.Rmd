@@ -1,0 +1,44 @@
+---
+title: "Untitled"
+author: "Sahana Rayan"
+date: "2023-10-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load Libraries
+
+```{r}
+library(tidyverse)
+```
+
+
+# Load Indonesia Data
+
+```{r}
+indo_catchNInd <- read_csv("./data/Indonesia_NIndCatch15.csv")
+indo_catchInd <- read_csv( "./data/Indonesia_IndCatch15.csv")
+```
+
+
+```{r}
+what <- indo_catchInd %>% 
+  filter(LonCentre <= 96 & LonCentre >= 95) %>% 
+  filter(LatCentre >= 5 & LatCentre <= 6)
+table(what$LonCentre)
+```
+
+
+# Binning cells
+
+```{r}
+
+```
+
+
+
+
+
