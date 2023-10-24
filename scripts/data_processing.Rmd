@@ -29,7 +29,7 @@ Lat should be between -20 and 10 degrees. Lon should be between 91 and 141
 degrees.
 
 ```{r}
-cells_indonesia <- codebk %>% filter(LonCentre >= 91, LonCentre < 141,
+cells_indonesia <- codebk %>% filter(LonCentre >= 91, LonCentre <= 142,
                                      LatCentre > -20, LatCentre < 10)
 ```
 
