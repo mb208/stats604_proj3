@@ -35,8 +35,228 @@ table(what$LonCentre)
 # Binning cells
 
 ```{r}
+lat_bin <- seq(-20, 10, 1)
+lat_labels <- seq(-19.5, 9.5, 1)
+lon_bin <- seq(92, 141, 1)
+lon_labels = seq(92.5, 140.5, 1)
+indo_catchInd_clean <- indo_catchInd %>% 
+  mutate(lat_binned = cut(LatCentre, breaks = lat_bin, labels = lat_labels),
+         lon_binned = cut(LonCentre, breaks = lon_bin, labels = lon_labels)) %>% 
+  group_by(lat_binned, lon_binned) %>% 
+  summarize(sum_IUU = sum(IUU),
+            sum_reported = sum(Reported))
+```
+
+
+```{r}
+what <- indo_catchInd_clean %>% 
+  filter(lat_binned == 5.5) %>% 
+  filter(lon_binned == 105.5)
+# table(what$LonCentre)
+```
+
+
+# Conditional filtering
+
+```{r}
+# 91.5
+keep <- paste("91.5", as.character(seq(4.5, 7.5, 1)), sep = ",")
+
+# 92.5
+keep <- c(keep, paste("92.5", as.character(seq(0.5, 8.5, 1)), sep = ",") )
+
+# 93.5
+keep <- c(keep,  paste("93.5", as.character(seq(-0.5, 9.5, 1)), sep = ","))
+
+# 94.5
+keep <- c(keep,  paste("94.5", as.character(seq(-1.5, 9.5, 1)), sep = ","))
+
+# 95.5
+keep <- c(keep,  paste("95.5", as.character(seq(-3.5, 9.5, 1)), sep = ","))
+
+# 96.5
+keep <- c(keep,  paste("96.5", as.character(seq(-4.5, 9.5, 1)), sep = ","))
+
+# 97.5
+keep <- c(keep,  paste("97.5", as.character(seq(-5.5, 8.5, 1)), sep = ","))
+
+# 98.5
+keep <- c(keep,  paste("98.5", as.character(seq(-6.5, 6.5, 1)), sep = ","))
+
+# 99.5
+keep <- c(keep,  paste("99.5", as.character(seq(-8.5, 0.5, 1)), sep = ","), 
+          paste("99.5", as.character(seq(2.5, 5.5, 1)), sep = ","))
 
 ```
+
+```{r}
+# 100.5
+keep <- c(keep,  paste("100.5", as.character(seq(-8.5, -0.5, 1)), sep = ","), 
+          paste("100.5", as.character(seq(1.5, 4.5, 1)), sep = ","))
+
+# 101.5
+keep <- c(keep,  paste("101.5", as.character(seq(-8.5, -2.5, 1)), sep = ","), 
+          paste("101.5", as.character(seq(1.5, 3.5, 1)), sep = ","))
+
+# 102.5
+keep <- c(keep,  paste("102.5", as.character(seq(-9.5, -3.5, 1)), sep = ","), 
+          paste("102.5", as.character(seq(0.5, 2.5, 1)), sep = ","))
+
+# 103.5
+keep <- c(keep,  paste("103.5", as.character(seq(-10.5, -4.5, 1)), sep = ","), 
+          paste("103.5", as.character(seq(-0.5, 1.5, 1)), sep = ","),
+          "103.5,6.5")
+
+# 104.5
+keep <- c(keep,  paste("104.5", as.character(seq(-10.5, -5.5, 1)), sep = ","), 
+          paste("104.5", as.character(seq(-2.5, 6.5, 1)), sep = ","))
+
+# 105.5
+keep <- c(keep,  paste("105.5", as.character(seq(-10.5, 7.5, 1)), sep = ","))
+
+# 106.5
+keep <- c(keep,  paste("106.5", as.character(seq(-11.5, 7.5, 1)), sep = ","))
+
+# 107.5
+keep <- c(keep,  paste("107.5", as.character(seq(-11.5, 8.5, 1)), sep = ","))
+
+# 108.5
+keep <- c(keep,  paste("108.5", as.character(seq(-11.5, 8.5, 1)), sep = ","))
+
+# 109.5
+keep <- c(keep,  paste("109.5", as.character(seq(-11.5, 7.5, 1)), sep = ","))
+```
+
+```{r}
+# 110.5
+keep <- c(keep,  paste("110.5", as.character(seq(-11.5, -1.5, 1)), sep = ","),
+          "110.5,1.5", "110.5,7.5")
+
+# 111.5
+keep <- c(keep,  paste("111.5", as.character(seq(-11.5, -8.5, 1)), sep = ","),
+          paste("111.5", as.character(seq(-6.5, -2.5, 1)), sep = ","),
+          "111.5,1.5")
+
+# 112.5
+keep <- c(keep,  paste("112.5", as.character(seq(-11.5, -3.5, 1)), sep = ","))
+
+# 113.5
+keep <- c(keep,  paste("113.5", as.character(seq(-12.5, -2.5, 1)), sep = ","))
+
+# 114.5
+keep <- c(keep,  paste("114.5", as.character(seq(-12.5, -3.5, 1)), sep = ","))
+
+# 115.5
+keep <- c(keep,  paste("115.5", as.character(seq(-12.5, -3.5, 1)), sep = ","))
+
+# 116.5
+keep <- c(keep,  paste("116.5", as.character(seq(-12.5, -1.5, 1)), sep = ","))
+
+# 117.5
+keep <- c(keep,  paste("117.5", as.character(seq(-13.5, 3.5, 1)), sep = ","))
+
+# 118.5
+keep <- c(keep,  paste("118.5", as.character(seq(-13.5, 4.5, 1)), sep = ","))
+
+# 119.5
+keep <- c(keep,  paste("119.5", as.character(seq(-13.5, 4.5, 1)), sep = ","))
+
+```
+
+
+```{r}
+# 120.5
+keep <- c(keep,  paste("120.5", as.character(seq(-13.5, 4.5, 1)), sep = ","))
+
+# 121.5
+keep <- c(keep,  paste("121.5", as.character(seq(-13.5, 4.5, 1)), sep = ","))
+
+# 122.5
+keep <- c(keep,  paste("122.5", as.character(seq(-13.5, 4.5, 1)), sep = ","))
+
+# 123.5
+keep <- c(keep,  paste("123.5", as.character(seq(-13.5, 4.5, 1)), sep = ","))
+
+# 124.5
+keep <- c(keep,  paste("124.5", as.character(seq(-13.5, 4.5, 1)), sep = ","))
+
+# 125.5
+keep <- c(keep,  paste("125.5", as.character(seq(-13.5, 5.5, 1)), sep = ","))
+
+# 126.5
+keep <- c(keep,  paste("126.5", as.character(seq(-13.5, 5.5, 1)), sep = ","))
+
+# 127.5
+keep <- c(keep,  paste("127.5", as.character(seq(-12.5, 5.5, 1)), sep = ","))
+
+# 128.5
+keep <- c(keep,  paste("128.5", as.character(seq(-11.5, 5.5, 1)), sep = ","))
+
+# 129.5
+keep <- c(keep,  paste("129.5", as.character(seq(-11.5, 5.5, 1)), sep = ","))
+```
+
+```{r}
+# 130.5
+keep <- c(keep,  paste("130.5", as.character(seq(-11.5, 5.5, 1)), sep = ","))
+
+# 131.5
+keep <- c(keep,  paste("131.5", as.character(seq(-11.5, 4.5, 1)), sep = ","))
+
+# 132.5
+keep <- c(keep,  paste("132.5", as.character(seq(-11.5, 4.5, 1)), sep = ","))
+
+# 133.5
+keep <- keep <- c(keep,  paste("133.5", as.character(seq(-11.5, -2.5, 1)), sep = ","), 
+          paste("133.5", as.character(seq(-0.5, 3.5, 1)), sep = ","))
+
+# 134.5
+keep <- c(keep,  paste("134.5", as.character(seq(-10.5, 3.5, 1)), sep = ","))
+
+# 135.5
+keep <- c(keep,  paste("135.5", as.character(seq(-11.5, 3.5, 1)), sep = ","))
+
+# 136.5
+keep <- keep <- c(keep,  paste("136.5", as.character(seq(-11.5, -4.5, 1)), sep = ","), 
+          paste("136.5", as.character(seq(-2.5, 2.5, 1)), sep = ","))
+
+# 137.5
+keep <- keep <- c(keep,  paste("137.5", as.character(seq(-11.5, -4.5, 1)), sep = ","), 
+          paste("137.5", as.character(seq(-2.5, 2.5, 1)), sep = ","))
+
+# 138.5
+keep <- keep <- c(keep,  paste("138.5", as.character(seq(-11.5, -5.5, 1)), sep = ","), 
+          paste("138.5", as.character(seq(-1.5, 1.5, 1)), sep = ","))
+
+# 139.5
+keep <- keep <- c(keep,  paste("139.5", as.character(seq(-12.5, -6.5, 1)), sep = ","), 
+          paste("139.5", as.character(seq(-2.5, 1.5, 1)), sep = ","))
+```
+
+```{r}
+# 140.5
+keep <- keep <- c(keep,  paste("140.5", as.character(seq(-12.5, -8.5, 1)), sep = ","), 
+          paste("140.5", as.character(seq(-2.5, 1.5, 1)), sep = ","))
+
+# 141.5
+keep <- keep <- c(keep,  paste("141.5", as.character(seq(-12.5, -9.5, 1)), sep = ","), 
+          paste("141.5", as.character(seq(-2.5, 0.5, 1)), sep = ","))
+```
+
+
+
+
+
+
+```{r}
+whattwo <- indo_catchInd_clean %>% 
+  mutate(coords = paste(lon_binned, lat_binned, sep= ",")) %>% 
+  filter(coords %in% keep)
+```
+
+
+
+
 
 
 
