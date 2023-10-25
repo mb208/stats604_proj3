@@ -1,0 +1,157 @@
+---
+title: "main"
+author: "Yuxuan Ke"
+date: "2023-10-23"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(ggspatial)
+```
+
+## Ocean productivity
+
+### xyz file
+xyz = text file, where x = longitude, y = latitude and z = npp value.
+note: The xyz files have a single header line, indicating the order of the variables and the value of nodata.
+
+npp is based on the standard vgpm, using modis chl, sst, and par as input; clouds have been filled in the input data using our own gap-filling software.
+
+These xyz data have been extracted from 1080 x 2160 global monthly grids, and the locations given represent the center of each pixel The edge of each cell is 1/6 degrees.
+
+```{r}
+fl = list.files(path = "data/vgpm.m.2015.xyz/", pattern = ".xyz$")
+xyz.list = lapply(fl, function(f) read.table(paste0("data/vgpm.m.2015.xyz/",f), sep = ' ', skip = 1, na.strings = '-9999')) # list of 12 data frames
+cl = c("lonc", "latc", "npp")
+for (i in 1:12) {
+  colnames(xyz.list[[i]]) <- cl
+}
+```
+
+```{r}
+op.cm = xyz.list[[1]]
+for (i in 2:12) {
+  op.cm = op.cm %>% inner_join(xyz.list[[i]], by = c("lonc", "latc"))
+}
+op.c = op.cm[,1:2]
+op.c$npp = rowMeans(op.cm[,3:14]) # cells that have at least 1 NA in 12 months have a annual npp = NA.
+```
+
+```{r}
+lat_bin <- seq(-20, 10, 1)
+lat_labels <- seq(-19.5, 9.5, 1)
+lon_bin <- seq(91, 142, 1)
+lon_labels = seq(91.5, 141.5, 1)
+op.indo.bigc = op.c %>% 
+    filter(latc>=-20 & latc<=10 & lonc>=91 & lonc<=142) %>%
+    mutate(lat_binned = cut(latc, breaks = lat_bin, labels = lat_labels),
+           lon_binned = cut(lonc, breaks = lon_bin, labels = lon_labels)) %>% 
+    group_by(lat_binned, lon_binned) %>% 
+    summarize(merg_npp = mean(npp, na.rm = T), n = n()) # how to merge the npp in 36 smaller cells
+cat("\n")
+summary(op.indo.bigc$merg_npp)
+```
+
+```{r}
+op.indo.bigc.coast = op.indo.bigc %>% 
+  mutate(coords = paste(lon_binned, lat_binned, sep= ",")) %>%
+  filter(coords %in% keep)
+op.indo.bigc.coast$lat_binned = as.numeric(as.character(op.indo.bigc.coast$lat_binned))
+op.indo.bigc.coast$lon_binned = as.numeric(as.character(op.indo.bigc.coast$lon_binned))
+
+```
+
+## summary
+```{r}
+summary(op.indo.bigc.coast$merg_npp)
+cat("sd =", sd(op.indo.bigc.coast$merg_npp, na.rm = T), "\n")
+cat("number of obs = ", nrow(op.indo.bigc.coast), "\n")
+cat("----------------------------\n")
+summary(data$ocean_prd)
+cat("sd =", sd(data$ocean_prd, na.rm = T), "\n")
+cat("number of obs = ", nrow(data), "\n")
+```
+
+## why difference
+```{r}
+op.indo.bigc.coast[which(is.na(op.indo.bigc.coast$merg_npp)), c("lon_binned", "lat_binned")]
+data[which(is.na(data$ocean_prd)), c("longitude", "latitude")]
+```
+
+### find source data of missing cells
+(97.5, 4.5) is missing in their data, but not in ours:
+```{r}
+ccor = c(97.5, 4.5)
+find = which(op.c$lonc > ccor[1]-0.5 & op.c$lonc < ccor[1]+0.5 & op.c$latc > ccor[2]-0.5 & op.c$latc < ccor[2]+0.5)
+#which(op.indo.bigc.coast[c("lon_binned", "lat_binned")] == ccor)
+op.cm[find, ]
+op.c[find, ]
+```
+
+(139.5, -7.5) is missing in our data, but not in theirs:
+```{r}
+ccor = c(139.5, -7.5)
+find = which(op.c$lonc > ccor[1]-0.5 & op.c$lonc < ccor[1]+0.5 & op.c$latc > ccor[2]-0.5 & op.c$latc < ccor[2]+0.5)
+
+op.cm[find, ]
+```
+
+### maps
+```{r}
+op.indo.bigc.coast$z = factor(ifelse(is.na(op.indo.bigc.coast$merg_npp), 0,1))
+
+theme_set(theme_minimal())
+world <- ne_countries(scale = "medium", returnclass = "sf")
+map = ggplot(data = world) +
+  geom_sf(aes(fill = name=="Indonesia")) +
+  xlab("Longitude") + ylab("Latitude") +
+  coord_sf(xlim = c(91, 142), ylim = c(-14, 10), expand = FALSE) +
+  theme(legend.position = "none", panel.background = element_rect(fill = "azure"), 
+     panel.border = element_rect(fill = NA), 
+     panel.grid.major = element_line(color = "black", size = 0.5))
+
+fig = map + geom_rect(data = op.indo.bigc.coast, 
+            aes(xmin = lon_binned-0.5, xmax = lon_binned+0.5, ymin = lat_binned-0.5, ymax = lat_binned+0.5, fill = z),
+            alpha = 0.3, color = "steelblue4") +
+  scale_fill_manual(values = c("red", "steelblue1", "#ECF3F5", "#FCE6CA")) +
+  geom_point(data = data[which(is.na(data$ocean_prd)), c("longitude", "latitude")], aes(x=longitude, y=latitude),
+             shape = 4)
+
+fig
+
+ggsave("fig.png", width = 8)
+```
+
+
+```{r}
+op.bigc.m = op.cm %>% 
+    mutate(lat_binned = cut(latc, breaks = lat_bin, labels = lat_labels),
+           lon_binned = cut(lonc, breaks = lon_bin, labels = lon_labels)) %>% 
+    group_by(lat_binned, lon_binned) %>% 
+    summarize(mean_npp1 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
+              mean_npp2 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
+              mean_npp3 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
+              mean_npp4 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
+              mean_npp5 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
+              mean_npp6 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
+              mean_npp7 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
+              mean_npp8 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
+              mean_npp9 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
+              mean_npp10 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
+              mean_npp11 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
+              mean_npp12 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
+              n = n())
+nna = apply(op.bigc.m[,3:14], 1, function(x) sum(is.na(x)))
+table(op.indo.bigc$n)
+table(op.indo.bigc.coast$n)
+```
+
+
+https://github.com/millerlp/Misc_R_scripts/blob/main/OSU_VGPM_load_functions.R
+
