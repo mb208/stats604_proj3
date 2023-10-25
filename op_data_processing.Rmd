@@ -40,7 +40,7 @@ for (i in 2:12) {
   op.cm = op.cm %>% inner_join(xyz.list[[i]], by = c("lonc", "latc"))
 }
 op.c = op.cm[,1:2]
-op.c$npp = rowMeans(op.cm[,3:14]) # cells that have at least 1 NA in 12 months have a annual npp = NA.
+op.c$npp = rowMeans(op.cm[,3:14], na.rm = T) # cells that have at least 1 NA in 12 months have a annual npp = NA.
 ```
 
 ```{r}
@@ -125,7 +125,20 @@ fig = map + geom_rect(data = op.indo.bigc.coast,
 
 fig
 
-ggsave("fig.png", width = 8)
+ggsave("fig_our.png", width = 8)
+```
+```{r}
+# maps of their sample data
+data$z = factor(ifelse(is.na(data$ocean_prd), 0,1))
+
+fig2 = map + geom_rect(data = data, 
+            aes(xmin = longitude-0.5, xmax = longitude+0.5, ymin = latitude-0.5, ymax = latitude+0.5, fill = z),
+            alpha = 0.3, color = "steelblue4") +
+  scale_fill_manual(values = c("red", "steelblue1", "#ECF3F5", "#FCE6CA"))
+
+fig2
+
+ggsave("fig_their.png", width = 8)
 ```
 
 
