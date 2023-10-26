@@ -15,6 +15,11 @@ library(rnaturalearthdata)
 library(ggspatial)
 ```
 
+## README
+The resulting sample data of ocean productivity will be stored in data frame `op.indo.bigc.coast`. The column `merg_npp` is the $OP_c$ statistics, and `lat_binned` and `lon_binned` represent the latitude and longitude of the cells' center.
+
+2 maps of the cells sample will also be output.
+
 ## Ocean productivity
 
 ### xyz file
@@ -40,7 +45,7 @@ for (i in 2:12) {
   op.cm = op.cm %>% inner_join(xyz.list[[i]], by = c("lonc", "latc"))
 }
 op.c = op.cm[,1:2]
-op.c$npp = rowMeans(op.cm[,3:14], na.rm = T) # cells that have at least 1 NA in 12 months have a annual npp = NA.
+op.c$npp = rowMeans(op.cm[,3:14], na.rm = T) # cells that are all NA's in 12 months have an annual npp = NA.
 ```
 
 ```{r}
@@ -140,31 +145,6 @@ fig2
 
 ggsave("fig_their.png", width = 8)
 ```
-
-
-```{r}
-op.bigc.m = op.cm %>% 
-    mutate(lat_binned = cut(latc, breaks = lat_bin, labels = lat_labels),
-           lon_binned = cut(lonc, breaks = lon_bin, labels = lon_labels)) %>% 
-    group_by(lat_binned, lon_binned) %>% 
-    summarize(mean_npp1 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
-              mean_npp2 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
-              mean_npp3 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
-              mean_npp4 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
-              mean_npp5 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
-              mean_npp6 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
-              mean_npp7 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
-              mean_npp8 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
-              mean_npp9 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
-              mean_npp10 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
-              mean_npp11 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
-              mean_npp12 = mean(parse(text=colnames(op.cm)[3]), na.rm = T), 
-              n = n())
-nna = apply(op.bigc.m[,3:14], 1, function(x) sum(is.na(x)))
-table(op.indo.bigc$n)
-table(op.indo.bigc.coast$n)
-```
-
 
 https://github.com/millerlp/Misc_R_scripts/blob/main/OSU_VGPM_load_functions.R
 
