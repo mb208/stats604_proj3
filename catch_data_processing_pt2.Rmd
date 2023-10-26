@@ -9,10 +9,19 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Install libraries
+
+```{r}
+# install.packages("kableExtra")
+```
+
+
 # Load Libraries
 
 ```{r}
 library(tidyverse)
+library(kableExtra)
+library(xtable)
 ```
 
 
@@ -297,6 +306,47 @@ summary(indo_total)
 sd(indo_total$total_catch)
 sd(indo_total$total_IUU_catch)
 ```
+
+
+```{r}
+summary_table <- data.frame("Obs" = c(nrow(indo_total), nrow(indo_catchInd_grouped),
+                                      nrow(indo_catchNInd_grouped), nrow(indo_total),
+                                      nrow(indo_catchInd_grouped),
+                                      nrow(indo_catchNInd_grouped)),
+                            "Mean" = c(mean(indo_total$total_catch),
+                                       mean(indo_catchInd_grouped$sum_reported),
+                                       mean(indo_catchNInd_grouped$sum_reported),
+                                       mean(indo_total$total_IUU_catch),
+                                       mean(indo_catchInd_grouped$sum_IUU),
+                                       mean(indo_catchNInd_grouped$sum_IUU)),
+                            "S.D" =  c(sd(indo_total$total_catch),
+                                       sd(indo_catchInd_grouped$sum_reported),
+                                       sd(indo_catchNInd_grouped$sum_reported),
+                                       sd(indo_total$total_IUU_catch),
+                                       sd(indo_catchInd_grouped$sum_IUU),
+                                       sd(indo_catchNInd_grouped$sum_IUU)),
+                            "Min" =  c(min(indo_total$total_catch),
+                                       min(indo_catchInd_grouped$sum_reported),
+                                       min(indo_catchNInd_grouped$sum_reported),
+                                       min(indo_total$total_IUU_catch),
+                                       min(indo_catchInd_grouped$sum_IUU),
+                                       min(indo_catchNInd_grouped$sum_IUU)),
+                            "Max" =  c(max(indo_total$total_catch),
+                                       max(indo_catchInd_grouped$sum_reported),
+                                       max(indo_catchNInd_grouped$sum_reported),
+                                       max(indo_total$total_IUU_catch),
+                                       max(indo_catchInd_grouped$sum_IUU),
+                                       max(indo_catchNInd_grouped$sum_IUU)))
+summary_table <- summary_table /1000
+summary_table$Obs <- summary_table$Obs*1000
+# summary_table %>% 
+#   knitr::kable(digits = 2, format = "latex") %>% 
+#   kable_classic_2()
+# lol <- xtableFtable(summary_table, method = "compact")
+# print.xtableFtable(lol, booktabs = TRUE)
+xtable(summary_table)
+```
+
 
 
 
