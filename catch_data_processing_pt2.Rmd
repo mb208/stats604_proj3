@@ -37,9 +37,15 @@ table(what$LonCentre)
 ```{r}
 lat_bin <- seq(-20, 10, 1)
 lat_labels <- seq(-19.5, 9.5, 1)
-lon_bin <- seq(92, 141, 1)
-lon_labels = seq(92.5, 140.5, 1)
+lon_bin <- seq(91, 142, 1)
+lon_labels = seq(91.5, 141.5, 1)
 indo_catchInd_clean <- indo_catchInd %>% 
+  mutate(lat_binned = cut(LatCentre, breaks = lat_bin, labels = lat_labels),
+         lon_binned = cut(LonCentre, breaks = lon_bin, labels = lon_labels)) %>% 
+  group_by(lat_binned, lon_binned) %>% 
+  summarize(sum_IUU = sum(IUU),
+            sum_reported = sum(Reported))
+indo_catchNInd_clean <- indo_catchNInd %>% 
   mutate(lat_binned = cut(LatCentre, breaks = lat_bin, labels = lat_labels),
          lon_binned = cut(LonCentre, breaks = lon_bin, labels = lon_labels)) %>% 
   group_by(lat_binned, lon_binned) %>% 
@@ -249,9 +255,47 @@ keep <- keep <- c(keep,  paste("141.5", as.character(seq(-12.5, -9.5, 1)), sep =
 
 
 ```{r}
-whattwo <- indo_catchInd_clean %>% 
+indo_catchInd_grouped <- indo_catchInd_clean %>% 
   mutate(coords = paste(lon_binned, lat_binned, sep= ",")) %>% 
   filter(coords %in% keep)
+indo_catchNInd_grouped <- indo_catchNInd_clean %>% 
+  mutate(coords = paste(lon_binned, lat_binned, sep= ",")) %>% 
+  filter(coords %in% keep)
+```
+
+
+
+```{r}
+table(indo_catchInd_grouped$lat_binned[indo_catchInd_grouped$lon_binned == 141.5])
+```
+
+
+
+```{r}
+summary(indo_catchInd_grouped)
+sd(indo_catchInd_grouped$sum_reported)
+sd(indo_catchInd_grouped$sum_IUU)
+summary(indo_catchNInd_grouped)
+sd(indo_catchNInd_grouped$sum_reported)
+sd(indo_catchNInd_grouped$sum_IUU)
+```
+
+
+```{r}
+indo_total <- left_join(indo_catchNInd_grouped, indo_catchInd_grouped, by = join_by(coords)) %>% 
+  rename(sum_NIUU = sum_IUU.x,
+         sum_IUU = sum_IUU.y,
+         sum_Nreported = sum_reported.x,
+         sum_reported = sum_reported.y) %>% 
+  mutate(total_IUU_catch = sum_NIUU + sum_IUU,
+         total_catch = sum_reported + sum_Nreported)
+```
+
+
+```{r}
+summary(indo_total)
+sd(indo_total$total_catch)
+sd(indo_total$total_IUU_catch)
 ```
 
 
