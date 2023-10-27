@@ -1,0 +1,72 @@
+---
+title: "ACLED Summaries"
+author: "Marc Brooks"
+date: "2023-10-24"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(kableExtra)
+library(rvest)
+```
+
+
+
+```{r read 2015 data}
+acled_15 <- read_csv(
+  file = "../data/2015-01-01-2015-12-31-South_Asia-Southeast_Asia-Indonesia.csv"
+  )
+```
+
+
+
+```{r}
+head(acled_15)
+
+names(acled_15)
+```
+
+
+Which variables are NA
+```{r}
+var_nas <- apply(acled_15, 2, function(x) 1*(sum(is.na(x))>1))
+var_nas <- names(var_nas)[var_nas!=0]
+
+var_nas
+summary(1*is.na(acled_15[,var_nas]))
+```
+
+
+
+Table for event type 
+```{r}
+event_type <- table(acled_15$event_type)
+names(event_type)
+
+event_dt <- tibble(Type = names(event_type), OurNumber = as.numeric(event_type),
+                   Theirs = c(33,5,380,99,17,65))
+kbl(event_dt, 
+    format = "latex", 
+    booktabs = T,
+    col.names = c("Type", "Our Number", "Original Number"),
+    caption = "ACLED types and number of conflicts in Indonesia for 2015."
+    ) %>%
+  kable_classic(full_width = F) %>% 
+  save_kable(file = "../tables/conflict_table.tex")
+```
+
+
+
+# Summary stats on region of conflicton
+Not sure how they got there numbers from the paper. It seems li
+```{r}
+mean(acled_15$admin3 == acled_15$location, na.rm = T)
+mean(acled_15$admin2 == acled_15$location, na.rm = T)
+mean(acled_15$admin1 == acled_15$location, na.rm = T)
+
+```
+
+
