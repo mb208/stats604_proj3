@@ -9,6 +9,16 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
+
+# Loading libraries
+
+
+```{r}
+# install.packages("fixest")
+library(fixest)
+```
+
 # Loading data set
 
 ```{r}
@@ -16,8 +26,57 @@ final_data <- read_csv("../data/final_dta_data.csv")
 ```
 
 
+# Preprocessing to get the province data
+
+
 ```{r}
-table(final_data$conflict)
+dummy_vars_final <- final_data[, 36:69]
+
 ```
+
+
+```{r}
+summary(final_data$ocean_prd)
+```
+
+
+```{r}
+first_stage_model_ic <- lm(indcatch000 ~ ocean_prd + prodummy1 + prodummy2 + prodummy3 + prodummy4 +
+                           prodummy5 + prodummy6 + prodummy7 + prodummy8 + prodummy9 + prodummy10
+                           + prodummy11 + prodummy12 + prodummy13 + prodummy14 + prodummy15 + prodummy16
+                           + prodummy17 + prodummy18 + prodummy19 + prodummy20 + prodummy21
+                           + prodummy22 + prodummy23 + prodummy24 + prodummy25 + prodummy26
+                           + prodummy27 + prodummy28 + prodummy29 + prodummy30 + prodummy31
+                           + prodummy32 + prodummy33 + prodummy34, data = final_data)
+summary(first_stage_model_ic)
+```
+
+
+```{r}
+feols_model_ic <- feols(conflict ~ 1 |indcatch000 ~ ocean_prd + prodummy1 + prodummy2 + prodummy3 + prodummy4 +
+                           prodummy5 + prodummy6 + prodummy7 + prodummy8 + prodummy9 + prodummy10
+                           + prodummy11 + prodummy12 + prodummy13 + prodummy14 + prodummy15 + prodummy16
+                           + prodummy17 + prodummy18 + prodummy19 + prodummy20 + prodummy21
+                           + prodummy22 + prodummy23 + prodummy24 + prodummy25 + prodummy26
+                           + prodummy27 + prodummy28 + prodummy29 + prodummy30 + prodummy31
+                           + prodummy32 + prodummy33 + prodummy34, data = final_data)
+```
+
+```{r}
+summary(feols_model_ic)
+```
+
+
+
+```{r}
+
+# f statistic test
+fitstat(feols_model_ic, ~ ivf)
+
+# kpr test?
+fitstat(feols_model_ic, ~ kpr)
+
+```
+
 
 
