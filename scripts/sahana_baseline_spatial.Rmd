@@ -36,7 +36,7 @@ final_data <- read_csv("../data/final_dta_data.csv")
 OLS Industrial catch
 ```{r}
 ols_model_ic <- feols(conflict100nmi ~ indcatch000 + 0, data = final_data)
-vcov_ols_ic <- vcov_conley(ols_model_ic, , lat = "latitude",lon = "longitude", 
+vcov_ols_ic <- vcov_conley(ols_model_ic, lat = "latitude",lon = "longitude", 
                            cutoff = 111, distance = "spherical")
 summary(ols_model_ic, vcov = vcov_ols_ic)
 vcov_ols_ic
@@ -46,7 +46,7 @@ OLS model with non industrial catches
 
 ```{r}
 ols_model_nic <- feols(conflict100nmi ~ nidcatch000 + 0, data = final_data)
-vcov_ols_nic <- vcov_conley(ols_model_nic, , lat = "latitude",lon = "longitude", 
+vcov_ols_nic <- vcov_conley(ols_model_nic, lat = "latitude",lon = "longitude", 
                             cutoff = 111, distance = "spherical")
 summary(ols_model_nic, vcov = vcov_ols_nic)
 vcov_ols_nic
@@ -68,7 +68,7 @@ vcov_ols_total
 Pooled 2SLS industrial catch
 ```{r}
 pooled_model_ic <- feols(conflict100nmi ~ 0 | indcatch000 ~ ocean_prd, data = final_data)
-vcov_pooled_ic <- vcov_conley(pooled_model_ic, , lat = "latitude",lon = "longitude", 
+vcov_pooled_ic <- vcov_conley(pooled_model_ic, lat = "latitude",lon = "longitude", 
                            cutoff = 111, distance = "spherical")
 summary(pooled_model_ic, vcov = vcov_pooled_ic)
 vcov_pooled_ic
@@ -77,7 +77,7 @@ vcov_pooled_ic
 Pooled 2SLS non industrial catch
 ```{r}
 pooled_model_nic <- feols(conflict100nmi ~ 0 | nidcatch000 ~ ocean_prd, data = final_data)
-vcov_pooled_nic <- vcov_conley(pooled_model_nic, , lat = "latitude",lon = "longitude", 
+vcov_pooled_nic <- vcov_conley(pooled_model_nic, lat = "latitude",lon = "longitude", 
                            cutoff = 111, distance = "spherical")
 summary(pooled_model_nic, vcov = vcov_pooled_nic)
 vcov_pooled_nic
@@ -144,7 +144,7 @@ fixed_model_fatal <- feols(formula(paste("fatalities100nmi ~ 0 + ", prodummy_par
                                        "| catch000 ~ ocean_prd")), 
                          data = final_data)
 vcov_fixed_fatal <- vcov_conley(fixed_model_fatal, lat = "latitude",lon = "longitude", 
-                           cutoff = "111mi")
+                           cutoff = "111km")
 summary(fixed_model_fatal)
 vcov_fixed_fatal[1,1]
 ```
