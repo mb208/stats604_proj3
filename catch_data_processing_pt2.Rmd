@@ -291,13 +291,15 @@ sd(indo_catchNInd_grouped$sum_IUU)
 
 
 ```{r}
-indo_total <- left_join(indo_catchNInd_grouped, indo_catchInd_grouped, by = join_by(coords)) %>% 
-  rename(sum_NIUU = sum_IUU.x,
-         sum_IUU = sum_IUU.y,
-         sum_Nreported = sum_reported.x,
-         sum_reported = sum_reported.y) %>% 
+indo_total <- left_join(indo_catchInd_grouped, indo_catchNInd_grouped, by = join_by(coords)) %>% 
+  rename(sum_IUU = sum_IUU.x,
+         sum_NIUU = sum_IUU.y,
+         sum_reported = sum_reported.x,
+         sum_Nreported = sum_reported.y) %>% 
   mutate(total_IUU_catch = sum_NIUU + sum_IUU,
-         total_catch = sum_reported + sum_Nreported)
+         total_catch = sum_reported + sum_Nreported) %>% 
+  select(-c(lat_binned.y, lon_binned.y)) %>% 
+  rename()
 ```
 
 
@@ -305,6 +307,7 @@ indo_total <- left_join(indo_catchNInd_grouped, indo_catchInd_grouped, by = join
 summary(indo_total)
 sd(indo_total$total_catch)
 sd(indo_total$total_IUU_catch)
+min(indo_total$sum_NIUU)
 ```
 
 

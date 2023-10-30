@@ -17,6 +17,11 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 # install.packages("fixest")
 library(fixest)
+library(tidyverse)
+library(spatialreg)
+library(geosphere)
+library(spdep)
+library(sphet)
 ```
 
 # Loading data set
@@ -25,58 +30,222 @@ library(fixest)
 final_data <- read_csv("../data/final_dta_data.csv")
 ```
 
+# Table 4
 
-# Preprocessing to get the province data
+## OLS models
+OLS Industrial catch
+```{r}
+ols_model_ic <- feols(conflict100nmi ~ indcatch000 + 0, data = final_data)
+vcov_ols_ic <- vcov_conley(ols_model_ic, lat = "latitude",lon = "longitude", 
+                           cutoff = 111, distance = "spherical")
+summary(ols_model_ic, vcov = vcov_ols_ic)
+vcov_ols_ic
+```
 
+OLS model with non industrial catches
 
 ```{r}
-dummy_vars_final <- final_data[, 36:69]
+ols_model_nic <- feols(conflict100nmi ~ nidcatch000 + 0, data = final_data)
+vcov_ols_nic <- vcov_conley(ols_model_nic, lat = "latitude",lon = "longitude", 
+                            cutoff = 111, distance = "spherical")
+summary(ols_model_nic, vcov = vcov_ols_nic)
+vcov_ols_nic
+```
 
+OLS model with total catches
+
+```{r}
+ols_model_total <- feols(conflict100nmi ~ catch000 + 0, data = final_data)
+vcov_ols_total <- vcov_conley(ols_model_total, lat = "latitude",lon = "longitude", 
+                              cutoff = 111, distance = "spherical")
+summary(ols_model_total, vcov = vcov_ols_total)
+vcov_ols_total
 ```
 
 
+## Pooled 2SLS models
+
+Pooled 2SLS industrial catch
 ```{r}
-summary(final_data$ocean_prd)
+pooled_model_ic <- feols(conflict100nmi ~ 0 | indcatch000 ~ ocean_prd, data = final_data)
+vcov_pooled_ic <- vcov_conley(pooled_model_ic, lat = "latitude",lon = "longitude", 
+                           cutoff = 111, distance = "spherical")
+summary(pooled_model_ic, vcov = vcov_pooled_ic)
+vcov_pooled_ic
+```
+
+Pooled 2SLS non industrial catch
+```{r}
+pooled_model_nic <- feols(conflict100nmi ~ 0 | nidcatch000 ~ ocean_prd, data = final_data)
+vcov_pooled_nic <- vcov_conley(pooled_model_nic, lat = "latitude",lon = "longitude", 
+                           cutoff = 111, distance = "spherical")
+summary(pooled_model_nic, vcov = vcov_pooled_nic)
+vcov_pooled_nic
+```
+
+Pooled 2SLS total catch
+```{r}
+pooled_model_total <- feols(conflict100nmi ~ 0 | catch000 ~ ocean_prd , data = final_data)
+vcov_pooled_total <- vcov_conley(pooled_model_total, lat = "latitude",lon = "longitude", 
+                           cutoff = 111, distance = "spherical")
+summary(pooled_model_total, vcov = vcov_pooled_total)
+vcov_pooled_total
 ```
 
 
-```{r}
-first_stage_model_ic <- lm(indcatch000 ~ ocean_prd + prodummy1 + prodummy2 + prodummy3 + prodummy4 +
-                           prodummy5 + prodummy6 + prodummy7 + prodummy8 + prodummy9 + prodummy10
-                           + prodummy11 + prodummy12 + prodummy13 + prodummy14 + prodummy15 + prodummy16
-                           + prodummy17 + prodummy18 + prodummy19 + prodummy20 + prodummy21
-                           + prodummy22 + prodummy23 + prodummy24 + prodummy25 + prodummy26
-                           + prodummy27 + prodummy28 + prodummy29 + prodummy30 + prodummy31
-                           + prodummy32 + prodummy33 + prodummy34, data = final_data)
-summary(first_stage_model_ic)
-```
+## fixed effects model 2SLS
 
 
+fixed  2SLS industrial catch
 ```{r}
-feols_model_ic <- feols(conflict ~ 1 |indcatch000 ~ ocean_prd + prodummy1 + prodummy2 + prodummy3 + prodummy4 +
-                           prodummy5 + prodummy6 + prodummy7 + prodummy8 + prodummy9 + prodummy10
-                           + prodummy11 + prodummy12 + prodummy13 + prodummy14 + prodummy15 + prodummy16
-                           + prodummy17 + prodummy18 + prodummy19 + prodummy20 + prodummy21
-                           + prodummy22 + prodummy23 + prodummy24 + prodummy25 + prodummy26
-                           + prodummy27 + prodummy28 + prodummy29 + prodummy30 + prodummy31
-                           + prodummy32 + prodummy33 + prodummy34, data = final_data)
-```
-
-```{r}
-summary(feols_model_ic)
+prodummy_part_form <- paste0(paste("prodummy", 1:34, sep = ""), collapse= " + ")
+fixed_model_ic <- feols(formula(paste("conflict100nmi ~ 0 + ", prodummy_part_form, 
+                                       "| indcatch000 ~ ocean_prd")), 
+                         data = final_data)
+vcov_fixed_ic <- vcov_conley(fixed_model_ic, lat = "latitude",lon = "longitude", 
+                           cutoff = 111, distance = "spherical")
+summary(fixed_model_ic, vcov = vcov_fixed_ic)
+vcov_fixed_ic[1,1]
 ```
 
 
 
+
+
+fixed  2SLS non industrial catch
+```{r}
+prodummy_part_form <- paste0(paste("prodummy", 1:34, sep = ""), collapse= " + ")
+fixed_model_nic <- feols(formula(paste("conflict100nmi ~ 0 + ", prodummy_part_form, 
+                                       "| nidcatch000 ~ ocean_prd")), 
+                         data = final_data)
+print(paste("conflict100nmi ~ 0 + ", prodummy_part_form, "| nidcatch000 ~ ocean_prd"))
+vcov_fixed_nic <- vcov_conley(fixed_model_nic, lat = "latitude",lon = "longitude", 
+                           cutoff = 111, distance = "spherical")
+summary(fixed_model_nic, vcov = vcov_fixed_nic)
+vcov_fixed_nic[1,1]
+```
+
+fixed  2SLS total catch
+```{r}
+prodummy_part_form <- paste0(paste("prodummy", 1:34, sep = ""), collapse= " + ")
+fixed_model_total <- feols(formula(paste("conflict100nmi ~ 0 + ", prodummy_part_form, 
+                                       "| catch000 ~ ocean_prd")), 
+                         data = final_data)
+vcov_fixed_total <- vcov_conley(fixed_model_total, lat = "latitude",lon = "longitude", 
+                           cutoff = "111km", distance = "spherical")
+summary(fixed_model_total)
+vcov_fixed_total[1,1]
+```
+
+fixed  2SLS fatalities total catch
+```{r}
+prodummy_part_form <- paste0(paste("prodummy", 1:34, sep = ""), collapse= " + ")
+fixed_model_fatal <- feols(formula(paste("fatalities100nmi ~ 0 + ", prodummy_part_form, 
+                                       "| catch000 ~ ocean_prd")), 
+                         data = final_data)
+vcov_fixed_fatal <- vcov_conley(fixed_model_fatal, lat = "latitude",lon = "longitude", 
+                           cutoff = "111km")
+summary(fixed_model_fatal)
+vcov_fixed_fatal[1,1]
+```
+
+# Table 3 stuff
+
+## Coeffecients
+```{r}
+summary(fixed_model_ic, stage = 1)
+summary(fixed_model_nic, stage = 1)
+summary(fixed_model_total, stage = 1)
+```
+
+
+## KPR stuff
+All bad news bears
+```{r}
+fitstat(fixed_model_ic, type = "kpr")
+fitstat(fixed_model_nic, type = "kpr")
+fitstat(fixed_model_total, type = "kpr")
+```
+
+
+# Table 5 stuff
+
+## Pull the W matrix
+```{r}
+final_data_wo_na <- final_data %>% 
+  filter(!is.na(final_data$ocean_prd))
+W_est <- matrix(rep(0, 742*742), nrow = 742)
+for (i in 1:742) {
+  for (j in 1:742) {
+    if (i != j) {
+      W_est[i, j] <- 1/distHaversine(final_data_wo_na[i, 3:4], final_data_wo_na[j, 3:4], r = 3963)
+    }
+  }
+  print(i)
+}
+```
+
+```{r}
+eigen_w <- eigen(W_est)
+W_norm <- W_est / max(abs(eigen_w$values))
+```
+
+
+
+```{r}
+spatial_lag_ic <- stsls(conflict100nmi ~ indcatch000, data = final_data_wo_na, listw = mat2listw(W_norm))
+```
+
+
+
+```{r}
+summary(spatial_lag_ic)
+```
+
+```{r}
+# spatial_lag_ic <- sacsarlm(formula(paste("conflict100nmi ~ 0 + indcatch000 + ", prodummy_part_form)),
+#                                    data = final_data_wo_na, listw = mat2listw(W_norm),
+#                                    listw2 = mat2listw(W_norm))
+
+# predict(fixed_model_ic, final_data_wo_na)
+
+fixed_model_ic_stage1 <- lm(formula(paste("indcatch000 ~ 0 + ocean_prd + ", prodummy_part_form)),
+                                    data = final_data_wo_na)
+final_data_wo_na$indcatch000hat <- fixed_model_ic_stage1$fitted.values
+```
+
 ```{r}
 
-# f statistic test
-fitstat(feols_model_ic, ~ ivf)
+spatial_lag_ic <- gstslshet(formula(paste("conflict100nmi ~ 0 + indcatch000hat + ", prodummy_part_form)),
+                                   data = final_data_wo_na, listw = mat2listw(W_norm))
 
-# kpr test?
-fitstat(feols_model_ic, ~ kpr)
-
+spatial_lag_ic_2 <- sacsarlm(formula(paste("conflict100nmi ~ 0 + indcatch000hat + ", 
+                                           prodummy_part_form)),
+                                   data = final_data_wo_na, listw = mat2listw(W_norm),
+                                   listw2 = mat2listw(W_norm))
+spatial_lag_ic_3 <- gstsls(formula(paste("conflict100nmi ~ 0 + indcatch000hat + ", 
+                                           prodummy_part_form)),
+                                   data = final_data_wo_na, listw = mat2listw(W_norm),
+                                   listw2 = mat2listw(W_norm))
 ```
+
+```{r}
+summary(spatial_lag_ic)
+```
+
+```{r}
+summary(spatial_lag_ic_2)
+```
+
+```{r}
+summary(spatial_lag_ic_3)
+```
+
+
+
+
+
+
 
 
 
