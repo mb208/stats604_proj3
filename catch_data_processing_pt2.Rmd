@@ -295,11 +295,16 @@ indo_total <- left_join(indo_catchInd_grouped, indo_catchNInd_grouped, by = join
   rename(sum_IUU = sum_IUU.x,
          sum_NIUU = sum_IUU.y,
          sum_reported = sum_reported.x,
-         sum_Nreported = sum_reported.y) %>% 
-  mutate(total_IUU_catch = sum_NIUU + sum_IUU,
-         total_catch = sum_reported + sum_Nreported) %>% 
+         sum_Nreported = sum_reported.y)  %>% 
   select(-c(lat_binned.y, lon_binned.y)) %>% 
-  rename()
+  rename(latitude = lat_binned.x,
+         longitude = lon_binned.x)
+indo_total$sum_NIUU[is.na(indo_total$sum_NIUU)] <- 0
+indo_total$sum_Nreported[is.na(indo_total$sum_Nreported)] <- 0
+indo_total <- indo_total %>% 
+  mutate(total_IUU_catch = sum_NIUU + sum_IUU,
+         total_catch = sum_reported + sum_Nreported)
+write.csv(indo_total, "./data/Indonesia_catch_final.csv")
 ```
 
 
@@ -312,34 +317,34 @@ min(indo_total$sum_NIUU)
 
 
 ```{r}
-summary_table <- data.frame("Obs" = c(nrow(indo_total), nrow(indo_catchInd_grouped),
-                                      nrow(indo_catchNInd_grouped), nrow(indo_total),
-                                      nrow(indo_catchInd_grouped),
-                                      nrow(indo_catchNInd_grouped)),
+summary_table <- data.frame("Obs" = c(nrow(indo_total), nrow(indo_total),
+                                      nrow(indo_total), nrow(indo_total),
+                                      nrow(indo_total),
+                                      nrow(indo_total)),
                             "Mean" = c(mean(indo_total$total_catch),
-                                       mean(indo_catchInd_grouped$sum_reported),
-                                       mean(indo_catchNInd_grouped$sum_reported),
+                                       mean(indo_total$sum_reported),
+                                       mean(indo_total$sum_Nreported),
                                        mean(indo_total$total_IUU_catch),
-                                       mean(indo_catchInd_grouped$sum_IUU),
-                                       mean(indo_catchNInd_grouped$sum_IUU)),
+                                       mean(indo_total$sum_IUU),
+                                       mean(indo_total$sum_NIUU)),
                             "S.D" =  c(sd(indo_total$total_catch),
-                                       sd(indo_catchInd_grouped$sum_reported),
-                                       sd(indo_catchNInd_grouped$sum_reported),
+                                       sd(indo_total$sum_reported),
+                                       sd(indo_total$sum_Nreported),
                                        sd(indo_total$total_IUU_catch),
-                                       sd(indo_catchInd_grouped$sum_IUU),
-                                       sd(indo_catchNInd_grouped$sum_IUU)),
+                                       sd(indo_total$sum_IUU),
+                                       sd(indo_total$sum_NIUU)),
                             "Min" =  c(min(indo_total$total_catch),
-                                       min(indo_catchInd_grouped$sum_reported),
-                                       min(indo_catchNInd_grouped$sum_reported),
+                                       min(indo_total$sum_reported),
+                                       min(indo_total$sum_Nreported),
                                        min(indo_total$total_IUU_catch),
-                                       min(indo_catchInd_grouped$sum_IUU),
-                                       min(indo_catchNInd_grouped$sum_IUU)),
+                                       min(indo_total$sum_IUU),
+                                       min(indo_total$sum_NIUU)),
                             "Max" =  c(max(indo_total$total_catch),
-                                       max(indo_catchInd_grouped$sum_reported),
-                                       max(indo_catchNInd_grouped$sum_reported),
+                                       max(indo_total$sum_reported),
+                                       max(indo_total$sum_Nreported),
                                        max(indo_total$total_IUU_catch),
-                                       max(indo_catchInd_grouped$sum_IUU),
-                                       max(indo_catchNInd_grouped$sum_IUU)))
+                                       max(indo_total$sum_IUU),
+                                       max(indo_total$sum_NIUU)))
 summary_table <- summary_table /1000
 summary_table$Obs <- summary_table$Obs*1000
 # summary_table %>% 

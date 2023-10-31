@@ -192,15 +192,16 @@ W_norm <- W_est / max(abs(eigen_w$values))
 
 
 
-```{r}
-spatial_lag_ic <- stsls(conflict100nmi ~ indcatch000, data = final_data_wo_na, listw = mat2listw(W_norm))
-```
+<!-- # ```{r} -->
+<!-- # spatial_lag_ic <- stsls(conflict100nmi ~ indcatch000, data = final_data_wo_na, listw = mat2listw(W_norm)) -->
+<!-- # ``` -->
 
 
+<!-- # ```{r} -->
+<!-- # summary(spatial_lag_ic) -->
+<!-- # ``` -->
 
-```{r}
-summary(spatial_lag_ic)
-```
+## industrial catch model - stage 1
 
 ```{r}
 # spatial_lag_ic <- sacsarlm(formula(paste("conflict100nmi ~ 0 + indcatch000 + ", prodummy_part_form)),
@@ -214,6 +215,8 @@ fixed_model_ic_stage1 <- lm(formula(paste("indcatch000 ~ 0 + ocean_prd + ", prod
 final_data_wo_na$indcatch000hat <- fixed_model_ic_stage1$fitted.values
 ```
 
+
+## stage 2
 ```{r}
 
 spatial_lag_ic <- gstslshet(formula(paste("conflict100nmi ~ 0 + indcatch000hat + ", prodummy_part_form)),
@@ -233,13 +236,100 @@ spatial_lag_ic_3 <- gstsls(formula(paste("conflict100nmi ~ 0 + indcatch000hat + 
 summary(spatial_lag_ic)
 ```
 
-```{r}
-summary(spatial_lag_ic_2)
-```
 
 ```{r}
 summary(spatial_lag_ic_3)
 ```
+
+
+
+## nic 1st stage
+
+```{r}
+fixed_model_nic_stage1 <- lm(formula(paste("nidcatch000 ~ 0 + ocean_prd + ", prodummy_part_form)),
+                                    data = final_data_wo_na)
+final_data_wo_na$nidcatch000hat <- fixed_model_nic_stage1$fitted.values
+```
+
+
+# stage 2
+
+```{r}
+spatial_lag_nic <- gstsls(formula(paste("conflict100nmi ~ 0 + nidcatch000hat + ", 
+                                           prodummy_part_form)),
+                                   data = final_data_wo_na, listw = mat2listw(W_norm, style = "M"),
+                                   listw2 = mat2listw(W_norm, style = "M"))
+spatial_lag_nic_2 <- gstslshet(formula(paste("conflict100nmi ~ 0 + nidcatch000hat + ", 
+                                           prodummy_part_form)),
+                                   data = final_data_wo_na, listw = mat2listw(W_norm, style = "M"))
+```
+
+
+```{r}
+summary(spatial_lag_nic)
+```
+
+```{r}
+summary(spatial_lag_nic_2)
+```
+
+
+
+
+## total catch stage 1
+
+```{r}
+fixed_model_total_stage1 <- lm(formula(paste("catch000 ~ 0 + ocean_prd + ", prodummy_part_form)),
+                                    data = final_data_wo_na)
+final_data_wo_na$catch000hat <- fixed_model_total_stage1$fitted.values
+```
+
+## stage 2
+
+```{r}
+spatial_lag_total <- gstsls(formula(paste("conflict100nmi ~ 0 + catch000hat + ", 
+                                           prodummy_part_form)),
+                                   data = final_data_wo_na, listw = mat2listw(W_norm, style = "M"),
+                                   listw2 = mat2listw(W_norm, style = "M"))
+
+```
+
+```{r}
+spatial_lag_total_2 <- gstslshet(formula(paste("conflict100nmi ~ 0 + catch000hat + ", 
+                                           prodummy_part_form)),
+                                   data = final_data_wo_na, listw = mat2listw(W_norm, style = "M"),
+                                 inverse = FALSE)
+```
+
+
+```{r}
+summary(spatial_lag_total)
+summary(spatial_lag_total_2)
+```
+
+
+## fatalities stage 2
+
+```{r}
+spatial_lag_fatal <- gstsls(formula(paste("fatalities100nmi ~ 0 + catch000hat + ", 
+                                           prodummy_part_form)),
+                                   data = final_data_wo_na, listw = mat2listw(W_norm, style = "M"),
+                                   listw2 = mat2listw(W_norm, style = "M"))
+spatial_lag_fatal_2 <- gstslshet(formula(paste("fatalities100nmi ~ 0 + catch000hat + ", 
+                                           prodummy_part_form)),
+                                   data = final_data_wo_na, listw = mat2listw(W_norm, style = "M"))
+```
+
+```{r}
+summary(spatial_lag_fatal)
+summary(spatial_lag_fatal_2)
+```
+
+
+
+
+
+
 
 
 
