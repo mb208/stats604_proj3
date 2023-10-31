@@ -1,0 +1,262 @@
+---
+title: "ACLED Summaries"
+author: "Marc Brooks"
+date: "2023-10-24"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(kableExtra)
+library(rvest)
+```
+
+
+
+```{r read 2015 data}
+acled_15 <- read_csv(
+  file = "../data/2015-01-01-2015-12-31-South_Asia-Southeast_Asia-Indonesia.csv"
+  )
+```
+
+
+
+```{r}
+head(acled_15)
+```
+
+
+Which variables are NA
+```{r}
+var_nas <- apply(acled_15, 2, function(x) 1*(sum(is.na(x))>1))
+var_nas <- names(var_nas)[var_nas!=0]
+
+var_nas
+summary(1*is.na(acled_15[,var_nas]))
+```
+
+
+
+Table for event type 
+```{r}
+event_type <- table(acled_15$event_type)
+names(event_type)
+
+event_dt <- tibble(Type = names(event_type), OurNumber = as.numeric(event_type),
+                   Theirs = c(33,5,380,99,17,65))
+kbl(event_dt, 
+    format = "latex", 
+    booktabs = T,
+    col.names = c("Type", "Our Number", "Original Number"),
+    caption = "ACLED types and number of conflicts in Indonesia for 2015."
+    ) %>%
+  kable_classic(full_width = F) %>% 
+  save_kable(file = "../tables/conflict_table.tex")
+```
+
+
+
+# Summary stats on region of conflicton
+Not sure how they got there numbers from the paper. It seems li   
+```{r}
+mean(acled_15$admin3 == acled_15$location, na.rm = T)
+mean(acled_15$admin2 == acled_15$location, na.rm = T)
+mean(acled_15$admin1 == acled_15$location, na.rm = T)
+
+```
+
+
+# Checking for provinces in the data
+
+```{r checking-provinces}
+province_str <- "Aceh, Bali, Banten, Bengkulu, Daerah Istimewa Yogyakarta, Dki Jakarta, Gorontalo, Jambi, Jawa Barat, Jawa Tengah, Jawa Timur, Kalimantan Barat, Kalimantan Selatan, Kalimantan Tengah, Kalimantan Timur, Kalimantan Utara, Kepulauan Bangka Belitung, Kepulauan Riau, Lampung, Maluku, Maluku Utara, Nusa Tenggara Barat, Nusa Tenggara Timur, Papua, Papua Barat, Riau, Sulawesi Barat, Sulawesi Selatan, Sulawesi Tengah, Sulawesi Tenggara, Sulawesi Utara, Sumatera Barat, Sumatera Selatan, Sumatera Utara"
+
+provinces <- str_split(province_str, ", ")[[1]]
+```
+
+
+
+# Summary statistics for table 2 in the data (search radius calculations)
+
+1 degree lat/lon = 60 nmi.
+0.8333335 = 50 nmi
+1.666667  = 100 nmi
+2.5.      = 2.5 nmi
+3.333334  = 200 nmi
+
+
+```{r}
+nmi_to_degree <- c(
+                   "0"  = 0,
+                   "50" = 0.8333335, 
+                   "100" = 1.666667,
+                   "150" = 2.5,
+                   "200" = 3.333334)
+```
+
+
+```{r}
+catch_15 <- read_csv("../data/Indonesia_catch_final.csv")
+```
+
+
+
+
+```{r}
+conflicts_in_nmi <- function(lat, lon, radii) {
+  ew_conflcits <- acled_15 %>% 
+    filter(longitude <= lon + .5 + nmi_to_degree[[radii]], 
+           longitude >= lon - .5 - nmi_to_degree[[radii]],
+           latitude <= lat + .5, latitude >= lat - .5) %>% 
+    nrow()
+  
+  ns_conflcits <- acled_15 %>% 
+    filter(latitude <= lat + .5 + nmi_to_degree[[radii]], 
+           latitude >= lat - .5 - nmi_to_degree[[radii]],
+           longitude <= lon + .5, longitude >= lon - .5) %>% 
+    nrow()
+  
+  ne_conflcits <- acled_15 %>% 
+    filter( sqrt((latitude + .5)**2 + (longitude + .5)**2) <= nmi_to_degree[[radii]],
+           longitude >= lon + .5, latitude >= lat + .5) %>% 
+    nrow()
+  
+  se_conflcits <- acled_15 %>% 
+    filter( sqrt((latitude - .5)**2 + (longitude + .5)**2) <= nmi_to_degree[[radii]],
+           longitude >= lon + .5, latitude <= lat - .5) %>% 
+    nrow()
+  
+  nw_conflcits <- acled_15 %>% 
+    filter( sqrt((latitude + .5)**2 + (longitude - .5)**2) <= nmi_to_degree[[radii]],
+           longitude <= lon - .5, latitude >= lat + .5) %>% 
+    nrow()
+  
+  sw_conflcits <- acled_15 %>% 
+    filter( sqrt((latitude - .5)**2 + (longitude - .5)**2) <= nmi_to_degree[[radii]],
+           longitude <= lon - .5, latitude <= lat - .5) %>% 
+    nrow()
+  
+  small_box <- acled_15 %>% 
+    filter(longitude <= lon + .5, latitude <= lat + .5,
+           longitude >=lon - .5, latitude >= lat - .5) %>% 
+    nrow()
+  
+  
+  return(ew_conflcits + ns_conflcits + 
+         ne_conflcits + se_conflcits + 
+         nw_conflcits + sw_conflcits - small_box)
+}
+```
+
+
+```{r}
+fatalies_in_nmi <- function(lat, lon, radii) {
+  ew <- acled_15 %>% 
+    filter(longitude <= lon + .5 + nmi_to_degree[[radii]], 
+           longitude >= lon - .5 - nmi_to_degree[[radii]],
+           latitude <= lat + .5, latitude >= lat - .5) %>% 
+    summarise(fatalities = sum(fatalities)) %>% pull(fatalities)
+  
+  ns <- acled_15 %>% 
+    filter(latitude <= lat + .5 + nmi_to_degree[[radii]], 
+           latitude >= lat - .5 - nmi_to_degree[[radii]],
+           longitude <= lon + .5, longitude >= lon - .5) %>% 
+    summarise(fatalities = sum(fatalities)) %>% pull(fatalities)
+  
+  ne <- acled_15 %>% 
+    filter( sqrt((latitude + .5)**2 + (longitude + .5)**2) <= nmi_to_degree[[radii]],
+           longitude >= lon + .5, latitude >= lat + .5) %>% 
+    summarise(fatalities = sum(fatalities)) %>% pull(fatalities)
+  
+  se <- acled_15 %>% 
+    filter( sqrt((latitude - .5)**2 + (longitude + .5)**2) <= nmi_to_degree[[radii]],
+           longitude >= lon + .5, latitude <= lat - .5) %>% 
+    summarise(fatalities = sum(fatalities)) %>% pull(fatalities)
+  
+  nw <- acled_15 %>% 
+    filter( sqrt((latitude + .5)**2 + (longitude - .5)**2) <= nmi_to_degree[[radii]],
+           longitude <= lon - .5, latitude >= lat + .5) %>% 
+    summarise(fatalities = sum(fatalities)) %>% pull(fatalities)
+  
+  sw <- acled_15 %>% 
+    filter( sqrt((latitude - .5)**2 + (longitude - .5)**2) <= nmi_to_degree[[radii]],
+           longitude <= lon - .5, latitude <= lat - .5) %>% 
+    summarise(fatalities = sum(fatalities)) %>% pull(fatalities)
+  
+  small_box <- acled_15 %>% 
+    filter(longitude <= lon + .5, latitude <= lat + .5,
+           longitude >=lon - .5, latitude >= lat - .5) %>% 
+    summarise(fatalities = sum(fatalities)) %>% pull(fatalities)
+  
+  
+  return(ew + ns + 
+         ne + se + 
+         nw + sw - small_box)
+}
+```
+
+
+```{r}
+for (radii in names(nmi_to_degree)) {
+  catch_15[,paste("conflict", radii,"nmi", sep = "")] = 0
+  for (i in seq_len(nrow(catch_15))) {
+    
+    catch_15[i,  
+             paste("conflict", radii,"nmi", sep = "")] = conflicts_in_nmi(
+               lat = catch_15$latitude[i],
+               lon = catch_15$longitude[i], 
+               radii = radii
+             )
+  }
+}
+```
+
+
+```{r}
+catch_15[,paste("fatalities", 100,"nmi", sep = "")] <- 0
+for (i in seq_len(nrow(catch_15))) {
+    
+    catch_15[i,  
+             paste("fatalities", 100,"nmi", sep = "")] = conflicts_in_nmi(
+               lat = catch_15$latitude[i],
+               lon = catch_15$longitude[i], 
+               radii = radii
+             )
+  }
+```
+
+
+```{r}
+summary(catch_15$conflict0nmi)
+sd(catch_15$conflict0nmi)
+```
+```{r}
+summary(catch_15$conflict100nmi)
+sd(catch_15$conflict100nmi)
+```
+
+
+```{r}
+summary(catch_15$conflict150nmi)
+sd(catch_15$conflict150nmi)
+```
+
+
+```{r}
+summary(catch_15$conflict200nmi)
+sd(catch_15$conflict200nmi)
+```
+
+```{r}
+summary(catch_15$fatalities100nmi)
+sd(catch_15$fatalities100nmi)
+```
+
+
+
+```{r}
+write_csv(catch_15, file = "../data/Indonesia_catch_final.csv")
+```
+

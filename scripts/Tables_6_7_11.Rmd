@@ -1,0 +1,418 @@
+---
+title: "Tables 6,7,11"
+author: "Marc Brooks"
+date: "2023-10-27"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(fixest)
+```
+
+
+#  Setup
+```{r all 2015 model setup}
+fish_df <- read_csv("../data/final_dta_data.csv")
+
+# filtering for missing values in response 
+miss_tot1014 <- !is.na(fish_df$annual_catch1014)
+miss_Ind1014 <- !is.na(fish_df$annual_indcatch1014)
+miss_NInd1014 <- !is.na(fish_df$annual_nidcatch1014)
+
+# Names of fixed effect variables 
+prov_fe_names <- paste0("prodummy", 1:34)
+
+
+# Creating formulas for each model 
+fml_tot1014 <- paste(paste("conflict100nmi ~ 0 + ",
+                     paste( prov_fe_names, collapse = " + "), sep = ""),
+                     "annual_catch1014 ~ ocp1014mean",
+                         #   paste( prov_fe_names, collapse = " + "), collapse = " + "),
+                     sep = " | "
+                     )
+fml_ind1014 <- paste(paste("conflict100nmi ~ 0 +",
+                     paste( prov_fe_names, collapse = " + ")),
+                     "annual_indcatch1014 ~ ocp1014mean",
+                     sep = " | "
+                     )
+fml_nind1014 <- paste(paste("conflict100nmi ~ 0 + ",
+                     paste( prov_fe_names, collapse = " + ")),
+                     "annual_nidcatch1014 ~ ocp1014mean",
+                     sep = " | "
+                     )
+```
+
+
+```{r create coeff input}
+get_coef <- function(coeftab) {
+  case_when(
+    coeftab[4] < 0.01 ~ paste("$", round(coeftab[1],4),"^{***}$", sep = ""),
+    coeftab[4] < 0.05 ~ paste("$", round(coeftab[1],4),"^{**}$", sep = ""),
+    coeftab[4] < 0.1 ~ paste("$", round(coeftab[1],4),"^{*}$", sep = ""),
+    TRUE ~ as.character(round(coeftab[1],4))
+    )
+}
+
+get_se <- function(coeftab) {
+  paste("(", round(coeftab[1],4), ")", sep = "")
+}
+```
+
+
+
+# Table 6 Regressions: Lagged effects of fisheries on the number of conflicts w/in the year.
+
+```{r table 6 init}
+tab6 <- matrix(numeric(11*4), ncol=4)
+col1_names <- c(
+              "Dependent variable", "",
+              "$Industrial catch_{2010-2014}$", "",
+              "$Non-industrial catch_{2010-2014}$", "",
+              "$Total catch_{2010-2014}$", "",
+              "Observations",
+              "Province fixed effects",
+              "Instrumented"
+)
+
+r1_c24 <-c("(1)","(2)", "(3)")
+r2_c24 <-paste0(paste0("$", rep("Conflict_{2015}",3)), "$")
+r1011_24 <- rep("Yes", 3)
+
+tab6[ ,1]   <- col1_names
+tab6[1,2:4] <- r1_c24
+tab6[2,2:4] <- r2_c24
+tab6[10,2:4] <- r1011_24
+tab6[11,2:4] <- r1011_24
+```
+
+
+## 2SLS for conflict in 2015 using total catches 2010-2014
+```{r total 2sls 1014-catch}
+mod_tot1014 <- feols(formula(fml_tot1014), data=fish_df)
+```
+
+
+```{r summary conely tot-2sls-1014}
+fit.tot1014 <- summary(mod_tot1014, vcov = vcov_conley(mod_tot1014, 
+                                        lat = "latitude", 
+                                        lon = "longitude", 
+                                        cutoff = 111,
+                                        distance = "spherical"))
+```
+
+## 2SLS for conflict in 2015 using industrial catches 2010-2014
+```{r ind 2sls 1014-catch}
+mod_ind1014 <- feols(formula(fml_ind1014), data=fish_df)
+```
+
+```{r summary conely Ind-2sls-1014}
+fit.ind1014 <- summary(mod_ind1014, vcov = vcov_conley(mod_ind1014, 
+                                        lat = "latitude", 
+                                        lon = "longitude", 
+                                        cutoff = 111,
+                                        distance = "spherical"))
+```
+
+## 2SLS for conflict in 2015 using non-industrial catches 2010-2014
+```{r Ind 2sls 1014-catch}
+mod_nind1014 <- feols(formula(fml_nind1014), data=fish_df[miss_NInd1014,])
+```
+
+```{r summary conely NInd-2sls-1014}
+fit.nind1014 <- summary(mod_nind1014, vcov = vcov_conley(mod_nind1014, 
+                                        lat = "latitude", 
+                                        lon = "longitude", 
+                                        cutoff = 111,
+                                        distance = "spherical"))
+```
+
+```{r create table 6}
+tab6[3,2] <- get_coef(fit.ind1014$coeftable)
+tab6[4,2] <- get_se(fit.ind1014$se)
+
+tab6[5,3] <- get_coef(fit.nind1014$coeftable)
+tab6[6,3] <- get_se(fit.nind1014$se)
+
+
+tab6[7,4] <- get_coef(fit.tot1014$coeftable)
+tab6[8,4] <- get_se(fit.tot1014$se)
+
+tab6[9,2:4] <- c(fit.ind1014$nobs, fit.nind1014$nobs, fit.tot1014$nobs)
+```
+
+
+# Table 7 Regressions: Lagged effects of fisheries on the number of conflicts w/in the year.
+
+```{r July-Dec 2015 model setup}
+# Creating formulas for each model 
+fml_tot1014_712 <- paste(paste("conflictm712 ~ 0 + ",
+                     paste( prov_fe_names, collapse = " + ")),
+                     "catch000 ~ ocp16",
+                         #   paste( prov_fe_names, collapse = " + "), collapse = " + "),
+                     sep = " | "
+                     )
+fml_ind1014_712 <- paste(paste("conflictm712 ~ 0 + ",
+                     paste( prov_fe_names, collapse = " + ")),
+                     "indcatch000 ~ ocp16",
+                     sep = " | "
+                     )
+fml_nind1014_712 <- paste(paste("conflictm712 ~ 0 + ",
+                     paste( prov_fe_names, collapse = " + ")),
+                     "nidcatch000 ~ ocp16",
+                     sep = " | "
+                     )
+```
+
+
+
+```{r table 7 init}
+tab7 <- matrix(numeric(11*4), ncol=4)
+col1_names <- c(
+              "Dependent variable", "",
+              "Industrial catch", "",
+              "Non-industrial catch", "",
+              "Total catch", "",
+              "Observations",
+              "Province fixed effects",
+              "Instrumented"
+)
+
+r1_c24 <-c("(1)","(2)", "(3)")
+r2_c24 <-paste0(paste0("$", rep("Conflict_{m7-m12}",3)), "$")
+r1011_24 <- rep("Yes", 3)
+
+tab7[ ,1]   <- col1_names
+tab7[1,2:4] <- r1_c24
+tab7[2,2:4] <- r2_c24
+tab7[10,2:4] <- r1011_24
+tab7[11,2:4] <- r1011_24
+```
+
+
+## 2SLS for conflict in 2015 July-Dec using total catches 2010-2014
+```{r total 2sls 1014-712}
+mod_tot1014_712 <- feols(formula(fml_tot1014_712), data=fish_df)
+```
+
+
+```{r summary conely tot-2sls-1014-712}
+fit.tot_712 <- summary(mod_tot1014_712, vcov = vcov_conley(mod_tot1014_712, 
+                                        lat = "latitude", 
+                                        lon = "longitude",
+                                        cutoff = 111,
+                                        distance = "spherical"))
+```
+
+## 2SLS for conflict in 2015 July-Dec using industrial catches 2010-2014
+```{r ind 2sls 1014-712}
+mod_ind1014_712 <- feols(formula(fml_ind1014_712), data=fish_df)
+```
+
+```{r summary conely Ind-2sls-1014}
+fit.ind_712 <- summary(mod_ind1014_712, vcov = vcov_conley(mod_ind1014_712, 
+                                        lat = "latitude", 
+                                        lon = "longitude", 
+                                        cutoff=111,
+                                        distance = "spherical"))
+```
+
+## 2SLS for conflict in 2015 July-Dec using non-industrial catches 2010-2014
+```{r Ind 2sls 1014-712-catch}
+mod_nind1014_712 <- feols(formula(fml_nind1014_712), data=fish_df)
+```
+
+
+```{r summary conely NInd-2sls-1014-712}
+fit.nind_712 <- summary(mod_nind1014_712, vcov = vcov_conley(mod_nind1014_712, 
+                                        lat = "latitude", 
+                                        lon = "longitude", 
+                                        cutoff = 111,
+                                        distance = "spherical"))
+```
+
+```{r create table 7}
+tab7[3,2] <- get_coef(fit.ind_712$coeftable)
+tab7[4,2] <- get_se(fit.ind_712$se)
+
+tab7[5,3] <- get_coef(fit.nind_712$coeftable)
+tab7[6,3] <- get_se(fit.nind_712$se)
+
+
+tab7[7,4] <- get_coef(fit.tot_712$coeftable)
+tab7[8,4] <- get_se(fit.tot_712$se)
+
+tab7[9,2:4] <- c(fit.ind_712$nobs, fit.nind_712$nobs, fit.tot_712$nobs)
+```
+
+
+# Table 11 Regressions: Lagged effects of fisheries on the number of conflicts w/in the year.
+
+```{r formulas developmental regions}
+# Names of fixed effect variables 
+prov_fe_names <- paste0("prodummy", 1:34)
+
+
+# Creating formulas for each model 
+fml_dev <- paste(paste("conflict100nmi ~ 0 + ",
+                     paste( prov_fe_names, collapse = " + ")),
+                     "catch000 ~ ocean_prd",
+                         #   paste( prov_fe_names, collapse = " + "), collapse = " + "),
+                     sep = " | "
+                     )
+```
+
+
+
+# Regression dev region 1
+```{r 2sls dev 1}
+mod_dev1 <- feols(formula(fml_dev), data=fish_df[fish_df$devgroup1==1,])
+```
+
+
+```{r summary conely dev1}
+summary(mod_dev1, vcov = vcov_conley(mod_dev1, 
+                                        lat = "latitude", 
+                                        lon = "longitude", 
+                                        cutoff = 111,
+                                        distance = "spherical"))
+```
+
+# Regression dev region 2
+```{r 2sls dev 2}
+mod_dev2 <- feols(formula(fml_dev), data=fish_df[fish_df$devgroup2==1,])
+```
+
+
+```{r summary conely dev2}
+summary(mod_dev2, vcov = vcov_conley(mod_dev2, 
+                                        lat = "latitude", 
+                                        lon = "longitude", 
+                                        cutoff = 111,
+                                        distance = "spherical"))
+```
+
+
+# Regression dev region 3
+```{r 2sls dev 3}
+mod_dev3 <- feols(formula(fml_dev), data=fish_df[fish_df$devgroup3==1,])
+```
+
+
+```{r summary conely dev3}
+summary(mod_dev3, vcov = vcov_conley(mod_dev3, 
+                                        lat = "latitude", 
+                                        lon = "longitude", 
+                                        cutoff = 111,
+                                        distance = "spherical"))
+```
+
+
+# Regression dev region 4
+```{r 2sls dev 4}
+mod_dev4 <- feols(formula(fml_dev), data=fish_df[fish_df$devgroup4==1,])
+```
+
+
+```{r summary conely dev4}
+summary(mod_dev4, vcov = vcov_conley(mod_dev4, 
+                                        lat = "latitude", 
+                                        lon = "longitude", 
+                                        cutoff = 111,
+                                        distance = "spherical"))
+```
+
+
+# Table 12 Regressions: Impact of IUU fishing.
+
+```{r iuu model setup}
+# Creating formulas for each model 
+fml_tot_iuu <- paste("conflict100nmi ~ 1",
+                     paste( prov_fe_names, collapse = " + "),
+                     "iuu000 ~ ocean_prd",
+                     sep = " | "
+                     )
+fml_ind_iuu <- paste("conflict100nmi ~ 1",
+                     paste( prov_fe_names, collapse = " + "),
+                     "ind_iuu000 ~ ocean_prd",
+                     sep = " | "
+                     )
+fml_nind_iuu<- paste("conflict100nmi ~ 1",
+                     paste( prov_fe_names, collapse = " + "),
+                     "nid_iuu000 ~ ocean_prd",
+                     sep = " | "
+                     )
+```
+
+
+
+```{r table 7 init}
+tab12 <- matrix(numeric(11*4), ncol=4)
+col1_names <- c(
+              "Dependent variable", "",
+              "Industrial catch", "",
+              "Non-industrial catch", "",
+              "Total catch", "",
+              "Observations",
+              "Province fixed effects",
+              "Instrumented"
+)
+
+r1_c24 <-c("(1)","(2)", "(3)")
+r2_c24 <-paste0(paste0("$", rep("Conflict_{m7-m12}",3)), "$")
+r1011_24 <- rep("Yes", 3)
+
+tab7[ ,1]   <- col1_names
+tab7[1,2:4] <- r1_c24
+tab7[2,2:4] <- r2_c24
+tab7[10,2:4] <- r1011_24
+tab7[11,2:4] <- r1011_24
+```
+
+
+
+## 2SLS for conflict in 2015 using total iuu
+```{r iuu fishing 2sls}
+mod_tot_iuu <- feols(formula(fml_tot_iuu), data=fish_df)
+```
+
+
+```{r summary conely tot-iuu}
+summary(mod_tot_iuu, vcov = vcov_conley(mod_tot_iuu, 
+                                        lat = "latitude", 
+                                        lon = "longitude",
+                                        cutoff = 111,
+                                        distance = "spherical"))
+```
+
+
+## 2SLS for conflict in 2015 using industrial iuu
+```{r ind-iuu fishing 2sls}
+mod_ind_iuu <- feols(formula(fml_ind_iuu), data=fish_df)
+```
+
+
+```{r summary conely ind-iuu}
+summary(mod_ind_iuu, vcov = vcov_conley(mod_ind_iuu, 
+                                        lat = "latitude", 
+                                        lon = "longitude",
+                                        cutoff = 111,
+                                        distance = "spherical"))
+```
+
+
+## 2SLS for conflict in 2015 using Non industrial iuu
+```{r ind-iuu fishing 2sls}
+mod_nind_iuu <- feols(formula(fml_nind_iuu), data=fish_df)
+```
+
+
+```{r summary conely ind-iuu}
+summary(mod_nind_iuu, vcov = vcov_conley(mod_nind_iuu, 
+                                        lat = "latitude", 
+                                        lon = "longitude",
+                                        cutoff = 111,
+                                        distance = "spherical"))
+```
+
