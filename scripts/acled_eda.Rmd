@@ -219,7 +219,7 @@ catch_15[,paste("fatalities", 100,"nmi", sep = "")] <- 0
 for (i in seq_len(nrow(catch_15))) {
     
     catch_15[i,  
-             paste("fatalities", 100,"nmi", sep = "")] = conflicts_in_nmi(
+             paste("fatalities", 100,"nmi", sep = "")] = fatalies_in_nmi(
                lat = catch_15$latitude[i],
                lon = catch_15$longitude[i], 
                radii = radii
@@ -228,10 +228,23 @@ for (i in seq_len(nrow(catch_15))) {
 ```
 
 
+
+
+```{r}
+write_csv(catch_15, file = "../data/Indonesia_catch_final.csv")
+```
+
+```{r}
+catch_15 <- read_csv(file = "../data/Indonesia_catch_final.csv")
+```
+
+
 ```{r}
 summary(catch_15$conflict0nmi)
 sd(catch_15$conflict0nmi)
 ```
+
+
 ```{r}
 summary(catch_15$conflict50nmi)
 sd(catch_15$conflict50nmi)
@@ -254,9 +267,4 @@ summary(catch_15$fatalities100nmi)
 sd(catch_15$fatalities100nmi)
 ```
 
-
-
-```{r}
-write_csv(catch_15, file = "../data/Indonesia_catch_final.csv")
-```
 
