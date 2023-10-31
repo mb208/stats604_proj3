@@ -9,6 +9,8 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(fixest)
+library(dotwhisker)
+
 ```
 
 
@@ -414,5 +416,148 @@ summary(mod_nind_iuu, vcov = vcov_conley(mod_nind_iuu,
                                         lon = "longitude",
                                         cutoff = 111,
                                         distance = "spherical"))
+```
+
+
+
+
+## Figure 3
+Retrieving error bounds and point estimates from github repository for
+original paper
+```{r}
+# Point estiamtes 
+conflict0   = 0.134
+conflict50  = 0.744
+conflict100 = 1.501
+conflict150 = 1.605
+conflict200 = 1.571
+
+
+# CIs
+LB0   = conflict0-0.067
+UB0   = 0.2-conflict0
+LB50  = conflict50-0.380
+UB50  = 1.108-conflict50
+LB100 = conflict100-0.852
+UB100 = 2.150-conflict100
+LB150 = conflict150-0.873
+UB150 = 2.2385-conflict150
+LB200 = conflict200-0.757
+UB200 = 2.385-conflict200
+```
+
+```{r}
+radii <- paste0(seq(50,200,50), " nmi")
+fig_3_results <- tibble(radii = c("", radii), 
+                        estimate = rep(0,5),
+                        std.error = rep(0,5),
+                        statistic = rep(0,5),
+                        p.value   = rep(0,5),
+                        og_ests  = c(conflict0,  
+                                     conflict50, 
+                                     conflict100,
+                                     conflict150,
+                                     conflict200),
+                        og_lb = c(LB0,
+                                   LB50,
+                                   LB100,
+                                   LB150,
+                                   LB200),
+                        og_ub = c(UB0,
+                                   UB50,
+                                   UB100,
+                                   UB150,
+                                   UB200)
+                        )
+                        
+```
+
+
+```{r}
+for (i in seq_along(fig_3_results$radii)) {
+  fml <-  paste(paste("conflict" , 
+                      str_remove(fig_3_results$radii[i]," "), " ~ 0 + ", 
+                      paste( prov_fe_names, collapse = " + "), sep= "" ),
+                     "catch000 ~ ocean_prd",
+                     sep = " | "
+                     )
+  model <- feols(formula(fml), data=fish_df)
+  mod_sum <- summary(model, stage=2,vcov = vcov_conley(model, 
+                                        lat = "latitude", 
+                                        lon = "longitude",
+                                        cutoff = 111,
+                                        distance = "spherical"))
+  fig_3_results[i, 2:5] <- mod_sum$coeftable[1, ] %>%
+    as.numeric() %>% 
+    as.list()
+}
+```
+
+```{r}
+fig_3_results[1, "radii"] = "0 nmi"
+
+fig_3_results <- fig_3_results %>% mutate(
+  radii = factor(radii, 
+                 levels = paste0(seq(0,200,50), " nmi"))
+)
+```
+
+```{r}
+temp <- fig_3_results %>% select(r_est = estimate, r_se = std.error, og_est = og_ests, og_lb, og_ub) %>% 
+  mutate(og_lb = og_est - og_lb,
+         og_ub = og_est + og_ub,
+         r_lb = r_est - r_se, 
+         r_ub = r_est + r_se) %>% select(r_est, og_est, r_lb, r_ub, og_lb, og_ub) 
+
+plot_df = tibble(est = c(temp$r_est, 
+                         temp$og_est),
+                 lb = c(temp$r_lb, temp$og_lb),
+                 ub = c(temp$r_ub, temp$og_ub),
+                 version = rep(c("Reproduced", "Original"), each = 5),
+                 radii = rep(paste0(seq(0,200,50), " nmi"), 2)
+                 ) %>% 
+  mutate(radii = factor(radii, levels = paste0(seq(0,200,50), " nmi")))
+```
+
+
+```{r}
+plot_df %>%
+  ggplot(aes(x = radii, color = version)) + 
+  geom_point(aes(y = est) , color = "black") + 
+  geom_errorbar(
+  aes(ymin = lb, ymax = ub), width = .2, alpha = 0.3) + 
+  geom_hline(yintercept = 0) + 
+  scale_color_manual(name='Version',
+                     values=c('Original'='red', 'Reproduced'='blue'),
+                     guide = "legend") +
+  labs(y = "Coefficient Estimates", x = "Search Range") + 
+  theme_classic()
+ggsave("../figures/figure_3.png", device = "png")
+```
+
+
+```{r}
+ggplot(data = fig_3_results,
+       aes(x = radii,
+           y = estimate,
+           ymin = estimate - std.error,
+           ymax = estimate + std.error)) +
+  geom_pointrange(position = position_dodge(width = 0.4), size = .5,
+                  shape = 21, color = "blue") +
+  geom_pointrange(aes(x = radii,
+           y = og_ests,
+           ymin = og_ests - og_lb,
+           ymax = og_ests + og_ub),
+           position = position_dodge(width = 0.4), size = .5,
+                  shape = 21, color = "red", alpha = .4) +
+  labs(x = "Search Range", y = "Coefficient Estiamte") + 
+  geom_hline(yintercept = 0) + 
+  scale_color_manual(name='Version',
+                     values=c('Original'='red', 'Reproduced'='blue'),
+                     guide = "legend") +
+  theme(legend.position = c(0, 1),legend.justification = c(0, 1)) +
+  theme_classic()
+
+ggsave()
 ```
 

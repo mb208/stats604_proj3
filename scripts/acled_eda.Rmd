@@ -233,6 +233,12 @@ summary(catch_15$conflict0nmi)
 sd(catch_15$conflict0nmi)
 ```
 ```{r}
+summary(catch_15$conflict50nmi)
+sd(catch_15$conflict50nmi)
+```
+
+
+```{r}
 summary(catch_15$conflict100nmi)
 sd(catch_15$conflict100nmi)
 ```
@@ -241,12 +247,6 @@ sd(catch_15$conflict100nmi)
 ```{r}
 summary(catch_15$conflict150nmi)
 sd(catch_15$conflict150nmi)
-```
-
-
-```{r}
-summary(catch_15$conflict200nmi)
-sd(catch_15$conflict200nmi)
 ```
 
 ```{r}
