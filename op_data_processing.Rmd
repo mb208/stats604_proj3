@@ -70,6 +70,30 @@ op.indo.bigc.coast = op.indo.bigc %>%
 op.indo.bigc.coast$lat_binned = as.numeric(as.character(op.indo.bigc.coast$lat_binned))
 op.indo.bigc.coast$lon_binned = as.numeric(as.character(op.indo.bigc.coast$lon_binned))
 
+op.final = op.indo.bigc.coast[, 1:3]
+colnames(op.final) <- c("latitude", "longitude", "ocean_prd")
+
+write.csv(op.final, file = "data/indo_op_final.csv")
+
+# merging data
+final = read.csv("data/Indonesia_catch_final.csv")
+final = final %>% left_join(op.final, by = c("latitude", "longitude")) 
+
+data = data %>% 
+    mutate(lat_binned = cut(latitude, breaks = lat_bin, labels = lat_labels),
+           lon_binned = cut(longitude, breaks = lon_bin, labels = lon_labels))
+data$lon_binned = as.numeric(as.character(data$lon_binned))
+data$lat_binned = as.numeric(as.character(data$lat_binned))
+
+prov = paste0("prodummy", 1:34)
+data.prov = data[c("lon_binned", "lat_binned", prov)]
+
+final = final %>% left_join(data.prov, by = c("longitude"="lon_binned", "latitude"="lat_binned"))
+final$indcatch000 = final$sum_reported / 1000
+final$nidcatch000 = final$sum_Nreported / 1000
+final$catch000 = final$total_catch / 1000
+
+write.csv(final, "data/Indonesia_catch_final.csv") # save
 ```
 
 ## summary

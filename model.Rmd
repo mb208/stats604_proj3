@@ -49,7 +49,7 @@ indvar = "indcatch000"
 iv = "ocean_prd"
 
 fml = as.formula(paste(indvar, paste(paste0("0+", iv), paste(prov, collapse=" + "), sep = "+"), sep=" ~ "))
-fit.1stg = feols(fml, data = op.data, vcov = vcov_conley(lat = "latitude", lon = "longitude", 
+fit.1stg = lm(fml, data = op.data, vcov = vcov_conley(lat = "latitude", lon = "longitude", 
                                        cutoff = 111, distance = "spherical")) #ols
 summary(fit.1stg)
 #fitstat(fit.1stg, type = "wf") # F-test
@@ -250,3 +250,99 @@ fit.iv = feols(fml, data = op.data, vcov = vcov_conley(lat = "latitude", lon = "
 summary(fit.iv)
 ```
 
+# model with generated data
+```{r}
+final = read.csv("data/Indonesia_catch_final.csv")
+```
+
+```{r}
+# OLS
+dvar = "conflict100nmi"
+
+# (1)
+indvar = "indcatch000"
+fml = as.formula(paste(dvar, paste(indvar, "+0"), sep=" ~ ")) # no intercept
+fit.ols = feols(fml, data = final, vcov = vcov_conley(lat = "latitude", lon = "longitude", 
+                                       cutoff = 111, distance = "spherical"))
+summary(fit.ols)
+
+# (2)
+indvar = "nidcatch000"
+fml = as.formula(paste(dvar, paste(indvar, "+0"), sep=" ~ "))
+fit.ols = feols(fml, data = final, vcov = vcov_conley(lat = "latitude", lon = "longitude", 
+                                       cutoff = 111, distance = "spherical"))
+summary(fit.ols)
+
+# (3)
+indvar = "catch000"
+fml = as.formula(paste(dvar, paste(indvar, "+0"), sep=" ~ "))
+fit.ols = feols(fml, data = final, vcov = vcov_conley(lat = "latitude", lon = "longitude", 
+                                       cutoff = 111, distance = "spherical"))
+summary(fit.ols)
+```
+
+```{r}
+# Pooled 2SLS
+dvar = "conflict100nmi"
+iv = "ocean_prd"
+
+# (4)
+endvar = "indcatch000"
+fml = as.formula(paste(dvar, paste(0, paste(endvar, iv, sep = "~"), sep = "|"), sep=" ~ ")) # no intercept
+fit.iv = feols(fml, data = final, vcov = vcov_conley(lat = "latitude", lon = "longitude", 
+                                       cutoff = 111, distance = "spherical")) #2sls
+summary(fit.iv)
+
+# (5)
+endvar = "nidcatch000"
+fml = as.formula(paste(dvar, paste(0, paste(endvar, iv, sep = "~"), sep = "|"), sep=" ~ "))
+fit.iv = feols(fml, data = final, vcov = vcov_conley(lat = "latitude", lon = "longitude", 
+                                       cutoff = 111, distance = "spherical")) #2sls
+summary(fit.iv)
+
+# (6)
+endvar = "catch000"
+fml = as.formula(paste(dvar, paste(0, paste(endvar, iv, sep = "~"), sep = "|"), sep=" ~ "))
+fit.iv = feols(fml, data = final, vcov = vcov_conley(lat = "latitude", lon = "longitude", 
+                                       cutoff = 111, distance = "spherical")) #2sls
+summary(fit.iv)
+```
+
+```{r}
+# Fixed effects 2SLS
+prov = paste0("prodummy", 1:34)
+dvar = "conflict100nmi"
+iv = "ocean_prd"
+
+# (7)
+indvar = "indcatch000"
+fml = as.formula(paste(dvar, paste(paste(paste(c(0,prov), collapse="+"), indvar, sep = "|"), iv, sep = "~"), sep=" ~ "))
+fit.iv = feols(fml, data = final, vcov = vcov_conley(lat = "latitude", lon = "longitude", 
+                                       cutoff = 111, distance = "spherical")) #2sls
+summary(fit.iv)
+
+# (8)
+indvar = "nidcatch000"
+fml = as.formula(paste(dvar, paste(paste(paste(c(0,prov), collapse="+"), indvar, sep = "|"), iv, sep = "~"), sep=" ~ "))
+fit.iv = feols(fml, data = final, vcov = vcov_conley(lat = "latitude", lon = "longitude", 
+                                       cutoff = 111, distance = "spherical")) #2sls
+summary(fit.iv)
+
+# (9)
+indvar = "catch000"
+fml = as.formula(paste(dvar, paste(paste(paste(c(0,prov), collapse="+"), indvar, sep = "|"), iv, sep = "~"), sep=" ~ "))
+fit.iv = feols(fml, data = final, vcov = vcov_conley(lat = "latitude", lon = "longitude", 
+                                       cutoff = 111, distance = "spherical")) #2sls
+summary(fit.iv)
+
+# (10)
+prov = paste0("prodummy", 1:34)
+dvar = "fatalities100nmi"
+indvar = "catch000"
+iv = "ocean_prd"
+
+fml = as.formula(paste(dvar, paste(paste( paste(c(0, prov), collapse="+"), indvar, sep = "|"), iv, sep = "~"), sep=" ~ ")) # no intercept
+fit.iv = feols(fml, data = final, vcov = vcov_conley(lat = "latitude", lon = "longitude", 
+                                       cutoff = 111, distance = "spherical")) #2sls
+summary(fit.iv)
+```
